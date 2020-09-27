@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="shop.carrental.mappers.NoticeMapper">
+
+	<resultMap type="noticeVO" id="noticeMap">
+		<id property="seq" column="seq" />
+		<result property="count" column="count" />
+		<result property="good" column="good" />
+		<result property="bad" column="bad" />
+		<result property="category" column="category" />
+		<result property="title" column="title" />
+		<result property="writer" column="writer" />
+		<result property="content" column="content" />
+		<result property="register_date" column="register_date" />
+		<result property="update_date" column="update_date" />
+	</resultMap>
+
+	<sql id="criteria">
+		<trim prefix="(" suffix=")AND" prefixOverrides="OR">
+			<foreach collection="searchByArray" item="searchBy">
+				<trim prefix="OR">
+					<choose>
+						<when test="searchBy=='T'.toString()">
+							<![CDATA[
+								UPPER(title) LIKE'%'||UPPER(#{keyword})||'%'
+							]]>
+						</when>
+						<when test="searchBy=='C'.toString()">
+							<![CDATA[
+								UPPER(content) LIKE'%'||UPPER(#{keyword})||'%'
+							]]>
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+	<select id="list" resultMap="noticeMap">
+		<![CDATA[
+			SELECT seq,category,title,writer,content,count,good,bad,register_date,update_date
+				FROM
+					(
+						SELECT /*+INDEX_DESC(notice pk_notice)*/
+							ROWNUM rn,seq,category,title,writer,content,count,good,bad,register_date,update_date
+							FROM notice
+						WHERE
+			]]>
+		<include refid="criteria" />
+		<![CDATA[
+						ROWNUM<=#{pageNumber}*#{AMOUNT}
+					)
+				WHERE rn>(#{pageNumber}-1)*#{AMOUNT}
+		]]>
+	</select>
+
+
+	<select id="read" parameterType="long" resultMap="noticeMap">
+		<![CDATA[
+			SELECT*FROM notice WHERE seq=#{seq}
+		]]>
+	</select>
+
+	<select id="total" resultType="int">
+		<![CDATA[
+			SELECT COUNT(*)
+				FROM notice
+			WHERE
+		]]>
+		<include refid="criteria" />
+		<![CDATA[
+			seq>0
+		]]>
+	</select>
+
+	<insert id="register">
+			<![CDATA[
+				INSERT INTO notice(seq,category,title,writer,content)
+					VALUES
+				(seq_notice.NEXTVAL,#{category},#{title},#{writer},#{content})
+			]]>
+	</insert>
+
+</mapper>
